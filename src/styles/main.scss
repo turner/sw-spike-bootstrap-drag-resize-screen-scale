@@ -1,0 +1,33 @@
+
+body {
+  background-color: aliceblue;
+}
+
+.resizable-card {
+
+  position: absolute;
+  top: 100px;
+  left: 100px;
+  z-index: 10;
+
+  height: 512px;
+  width: 640px;
+
+  resize: both; /* Allow resizing */
+  overflow: hidden; /* Hide content overflow when resizing */
+  display: flex; /* Flexbox ensures dynamic sizing */
+  flex-direction: column;
+
+  >.card-body {
+    padding: unset;
+  }
+}
+
+.resizable-card .card-header {
+  flex: 0 0 auto; /* Header takes fixed size */
+}
+
+.resizable-card .card-body {
+  flex: 1 1 auto; /* Body grows or shrinks with the card */
+  overflow-y: auto; /* Enable scrolling if content overflows */
+}
