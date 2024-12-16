@@ -17,18 +17,35 @@ let twistedTorusMesh
 let twistedTorusHull
 let twistedTorusPointcloud
 let sphereCluster
+let cardBody
 
 document.addEventListener("DOMContentLoaded", (event) => {
-    
+
     const card = document.querySelector('.card');
     const cardHeader = card.querySelector('.card-header'); // Handle for dragging
-    const cardBody = document.querySelector('.card-body');
+    cardBody = document.querySelector('.card-body');
 
     makeDraggable(card, cardHeader)
     // makeResizable(cardBody, resizeHandle)
 
+    const delay = 8
+    const resizeObserver = new ResizeObserver(
+        debounce(entries => {
+            for (let entry of entries) {
+                const { width, height } = entry.contentRect;
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+        }, delay) // Adjust delay as needed
+    );
+
+    resizeObserver.observe(cardBody);
+
+
+
     scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x0000ff)
+    scene.background = new THREE.Color(0xffffff)
 
     const { width:cardWidth, height:cardHeight } = cardBody.getBoundingClientRect()
     camera = new THREE.PerspectiveCamera(75, cardWidth / cardHeight, 0.1, 1000);
@@ -46,33 +63,25 @@ document.addEventListener("DOMContentLoaded", (event) => {
     material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
     twistedTorusMesh = new THREE.Mesh(geometry, material);
     scene.add(twistedTorusMesh)
-    // twistedTorusHull = new ConvexHull(twistedTorusMesh.geometry.attributes.position.array)
-    // scene.add(convexHull.mesh)
+    twistedTorusHull = new ConvexHull(twistedTorusMesh.geometry.attributes.position.array)
+    scene.add(twistedTorusHull.mesh)
 
 
-    const delay = 8
-    const resizeObserver = new ResizeObserver(
-        debounce(entries => {
-            for (let entry of entries) {
-                const { width, height } = entry.contentRect;
-                console.log(`Resized to: ${width}px x ${height}px`);
-
-                // Update Three.js components
-                camera.aspect = width / height;
-                camera.updateProjectionMatrix();
-                renderer.setSize(width, height);
-            }
-        }, delay) // Adjust delay as needed
-    );
-
-    resizeObserver.observe(cardBody);
+    // BBox Visualizer
+    const bboxHelper = new THREE.BoxHelper(twistedTorusHull.mesh, 0xff0000)
+    // scene.add(bboxHelper)
 
     animate()
 
 })
 
+
 function animate() {
     requestAnimationFrame(animate)
+
+    const bounds = calculateTightFittingBounds(twistedTorusHull.mesh, camera)
+    updateScaleBars(bounds)
+
     renderer.render(scene, camera)
 }
 
@@ -118,11 +127,13 @@ function calculateTightFittingBounds(mesh, camera) {
     const widthNM = xyzCameraMax.x - xyzCameraMin.x
     const heightNM = xyzCameraMax.y - xyzCameraMin.y
 
-    const south = ndcMin01Y * window.innerHeight
-    const north = ndcMax01Y * window.innerHeight
+    const { width:cardBodyWidth, height:cardBodyHeight } = cardBody.getBoundingClientRect()
 
-    const west = ndcMin01X * window.innerWidth
-    const east = ndcMax01X * window.innerWidth
+    const south = ndcMin01Y * cardBodyHeight
+    const north = ndcMax01Y * cardBodyHeight
+
+    const west = ndcMin01X * cardBodyWidth
+    const east = ndcMax01X * cardBodyWidth
 
     const width =  east - west
     const height = north - south

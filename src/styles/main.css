@@ -15,6 +15,7 @@ body {
   flex-direction: column;
 }
 .resizable-card > .card-body {
+  position: relative;
   padding: unset;
 }
 
